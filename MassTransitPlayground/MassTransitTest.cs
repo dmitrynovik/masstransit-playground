@@ -15,10 +15,11 @@ namespace MassTransitPlayground
 
     public class MassTransitTest
     {
+        const string ExpectedMessage = "Testing MassTransit in-memory bus";
+
         [Fact]
         public async Task MassTransit_InMemory_Test()
         {
-            const string expectedMessage = "Testing MassTransit in-memory bus";
             var waitHandle = new ManualResetEvent(false);
 
             var busControl = Bus.Factory.CreateUsingInMemory(cfg =>
@@ -30,18 +31,24 @@ namespace MassTransitPlayground
                     {
                         Console.WriteLine(m.Message);
                         waitHandle.Set();
-                        m.Message.Should().Be(expectedMessage);
+                        m.Message.Should().Be(ExpectedMessage);
                         return Task.CompletedTask;
                     });
                 });
             });
 
+            await SendReceiveStop(busControl, waitHandle);
+        }
+
+        private static async Task SendReceiveStop(IBusControl busControl, WaitHandle waitHandle)
+        {
             await busControl.StartAsync();
 
-            await busControl.Publish(new Message { Payload = expectedMessage });
-            waitHandle.WaitOne();
-            waitHandle.Dispose();
+            await busControl.Publish(new Message {Payload = ExpectedMessage});
 
+            waitHandle.WaitOne();
+
+            waitHandle.Dispose();
             await busControl.StopAsync();
         }
     }
