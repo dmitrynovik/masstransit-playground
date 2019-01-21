@@ -75,7 +75,7 @@ namespace MassTransitPlayground
             await dispatcher(message);
 
             if (!waitHandle.WaitOne(timeout))
-                throw new TimeoutException($"{timeout} expired");
+                throw new TimeoutException($"Timeout of {timeout}ms expired");
 
             waitHandle.Dispose();
             await busControl.StopAsync();
