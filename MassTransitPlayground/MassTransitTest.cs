@@ -67,15 +67,15 @@ namespace MassTransitPlayground
             await DispatchReceiveStop(busControl, waitHandle, m => busControl.Publish(m));
         }
 
-        private static async Task DispatchReceiveStop(IBusControl busControl, WaitHandle waitHandle, Func<Message, Task> dispatcher)
+        private static async Task DispatchReceiveStop(IBusControl busControl, WaitHandle waitHandle, Func<Message, Task> dispatcher, int timeout = DefaultWaitTimeout)
         {
             await busControl.StartAsync();
 
             var message = new Message { Payload = ExpectedMessage };
             await dispatcher(message);
 
-            if (!waitHandle.WaitOne(DefaultWaitTimeout))
-                throw new TimeoutException($"{DefaultWaitTimeout} expired");
+            if (!waitHandle.WaitOne(timeout))
+                throw new TimeoutException($"{timeout} expired");
 
             waitHandle.Dispose();
             await busControl.StopAsync();
