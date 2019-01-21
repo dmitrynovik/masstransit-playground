@@ -5,7 +5,7 @@ using FluentAssertions;
 using MassTransit;
 using Xunit;
 
-namespace MicroService.PassengerReconciliation.Tests
+namespace MassTransitPlayground
 {
     public class Message
     {
@@ -13,7 +13,7 @@ namespace MicroService.PassengerReconciliation.Tests
         public override string ToString() => Payload;
     }
 
-    public class MassTransitTest
+    public class MassTransitTest : IDisposable
     {
         private readonly EventWaitHandle _event = new ManualResetEvent(false);
 
@@ -38,9 +38,16 @@ namespace MicroService.PassengerReconciliation.Tests
             });
 
             await busControl.StartAsync();
+
             await busControl.Publish(new Message { Payload = expectedMessage });
             _event.WaitOne();
+
             await busControl.StopAsync();
+        }
+
+        public void Dispose()
+        {
+            _event?.Dispose();
         }
     }
 }
