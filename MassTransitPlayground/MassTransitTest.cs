@@ -13,14 +13,13 @@ namespace MassTransitPlayground
         public override string ToString() => Payload;
     }
 
-    public class MassTransitTest : IDisposable
+    public class MassTransitTest
     {
-        private readonly EventWaitHandle _event = new ManualResetEvent(false);
-
         [Fact]
         public async Task MassTransit_InMemory_Test()
         {
             const string expectedMessage = "Testing MassTransit in-memory bus";
+            var waitHandle = new ManualResetEvent(false);
 
             var busControl = Bus.Factory.CreateUsingInMemory(cfg =>
             {
@@ -30,7 +29,7 @@ namespace MassTransitPlayground
                     ep.Handler<Message>(m =>
                     {
                         Console.WriteLine(m.Message);
-                        _event.Set();
+                        waitHandle.Set();
                         m.Message.Should().Be(expectedMessage);
                         return Task.CompletedTask;
                     });
@@ -40,14 +39,10 @@ namespace MassTransitPlayground
             await busControl.StartAsync();
 
             await busControl.Publish(new Message { Payload = expectedMessage });
-            _event.WaitOne();
+            waitHandle.WaitOne();
+            waitHandle.Dispose();
 
             await busControl.StopAsync();
-        }
-
-        public void Dispose()
-        {
-            _event?.Dispose();
         }
     }
 }
