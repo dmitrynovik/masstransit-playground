@@ -15,7 +15,8 @@ namespace MassTransitPlayground
 
     public class MassTransitTest
     {
-        const string ExpectedMessage = "Testing MassTransit in-memory bus";
+        private const string ExpectedMessage = "Testing MassTransit in-memory bus";
+        private const string QueueName = "queue_name";
         private const int DefaultWaitTimeout = 5000;
 
         [Fact]
@@ -38,7 +39,7 @@ namespace MassTransitPlayground
 
             var busControl = Bus.Factory.CreateUsingInMemory(cfg =>
             {
-                cfg.ReceiveEndpoint("queue_name", ep =>
+                cfg.ReceiveEndpoint(QueueName, ep =>
                 {
                     ep.Handler<Message>(m =>
                     {
@@ -57,7 +58,10 @@ namespace MassTransitPlayground
         {
             await DispatchReceiveStop(busControl, waitHandle, async m =>
             {
-                var sendEndpoint = await busControl.GetSendEndpoint(busControl.Address);
+                // This will work:
+                var sendEndpoint = await busControl.GetSendEndpoint(new Uri($"loopback://localhost/{QueueName}"));
+                // This will NOT work:
+                //var sendEndpoint = await busControl.GetSendEndpoint(new Uri(busControl.Address));
                 await sendEndpoint.Send(m);
             });
         }
