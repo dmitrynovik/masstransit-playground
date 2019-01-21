@@ -17,8 +17,21 @@ namespace MassTransitPlayground
     {
         const string ExpectedMessage = "Testing MassTransit in-memory bus";
 
+        [Fact(Skip = "Send requires convention")]
+        public async Task MassTransit_InMemory_Send_Receive_Test()
+        {
+            var args = ConfigureInMemoryReceiveEndpoint();
+            await SendReceiveStop(args.Item1, args.Item2);
+        }
+
         [Fact]
-        public async Task MassTransit_InMemory_Test()
+        public async Task MassTransit_InMemory_Publish_Receive_Test()
+        {
+            var args = ConfigureInMemoryReceiveEndpoint();
+            await PublishReceiveStop(args.Item1, args.Item2);
+        }
+
+        private static (IBusControl, ManualResetEvent) ConfigureInMemoryReceiveEndpoint()
         {
             var waitHandle = new ManualResetEvent(false);
 
@@ -37,14 +50,19 @@ namespace MassTransitPlayground
                 });
             });
 
-            await SendReceiveStop(busControl, waitHandle);
+            return (busControl, waitHandle);
         }
 
-        private static async Task SendReceiveStop(IBusControl busControl, WaitHandle waitHandle)
+        private static async Task SendReceiveStop(IBusControl busControl, WaitHandle waitHandle) => await DispatchReceiveStop(busControl, waitHandle, m => busControl.Send(m));
+
+        private static async Task PublishReceiveStop(IBusControl busControl, WaitHandle waitHandle) => await DispatchReceiveStop(busControl, waitHandle, m => busControl.Publish(m));
+
+        private static async Task DispatchReceiveStop(IBusControl busControl, WaitHandle waitHandle, Func<Message, Task> dispatcher)
         {
             await busControl.StartAsync();
 
-            await busControl.Publish(new Message {Payload = ExpectedMessage});
+            var message = new Message { Payload = ExpectedMessage };
+            await dispatcher(message);
 
             waitHandle.WaitOne();
 
